@@ -1,0 +1,102 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.S0}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.S1}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.S2}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.S3}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.S4}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.clk}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.clrp}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.complete}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.decb}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.done}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.lda}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.ldb}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.ldp}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.start}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.control_path.state[2:0]}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.a[7:0]}]}
+	} ]]
+waveform format $id -radix %d -color #00ffff
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.a_data[7:0]}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.b[7:0]}]}
+	} ]]
+waveform format $id -radix %d -color #00ffff
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.b_out[7:0]}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.clk}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.clrp}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.decb}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.done}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.lda}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.ldb}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.ldp}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {top.fl.data_path.product[7:0]}]}
+	} ]]
+waveform format $id -radix %d -color #00ffff -bgcolor #000000
+
+waveform xview limits 0 315ns
