@@ -1,0 +1,66 @@
+class base_agent extends uvm_agent;
+`uvm_component_utils (base_agent) 
+function new(string name, uvm_component parent);
+super.new(name, parent);
+endfunction
+endclass
+// Define child class that extends base agent 
+
+class child_agent extends base_agent;
+`uvm_component_utils (child_agent)
+function new(string name, uvm_component parent); 
+super.new(name, parent); 
+endfunction
+endclass
+
+`include "base_agent.svh"
+`include "child_agent.svh"
+
+class base_env extends uvm_env;
+`uvm_component_utils(base_env)
+
+  function new(string name, uvm_component parent);
+super.new(name, parent);
+endfunction
+base_agent m_agent;
+
+virtual function void build_phase (uvm_phase phase); 
+super.build_phase(phase);
+m_agent = base_agent::type_id::create("m_agent", this);
+uvm_info("AGENT", $sformatf("Factory returned agent of type=%s, path=%s);
+endfunction
+endclass
+
+`include "env.svh"
+import uvm_pkg::*;
+class base_test extends uvm_test;
+`uvm_component_utils (base_test)
+  
+ function new(string name, uvm_component parent);
+super.new(name, parent);
+endfunction
+  
+base_env m_env;
+  
+virtual function void build_phase(uvm_phase phase);
+uvm_factory factory = uvm_factory::get();
+  
+super.build_phase(phase);
+  set_type_override_by_type (base_agent::get_type(), child_agent::get_type());
+  //factory.set_type_override_by_name("base_agent", "child_agent");
+factory.print();
+  m_env=base_env::type_id::create("m_env", this);
+endfunction
+endclass
+
+`include "uvm_macros.svh"
+import uvm_pkg::*;
+`include "test.svh"
+module top;
+
+
+initial begin
+run_test();
+end
+
+endmodule

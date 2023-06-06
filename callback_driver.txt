@@ -1,0 +1,127 @@
+class driver extends uvm_component;
+  
+  `uvm_component_utils(driver)
+  `uvm_register_cb(driver,driver_callback)
+  
+  function new(string name, uvm_component parent);
+    super.new(name,parent);
+  endfunction
+  
+  task run_phase(uvm_phase phase);
+      `uvm_do_callbacks(driver,driver_callback,pre_drive());
+      
+      drive_pkt();
+      
+      `uvm_do_callbacks(driver,driver_callback,post_drive());
+  endtask
+  
+  task drive_pkt();
+    `uvm_info("DRIVER","Inside drive_pkt method",UVM_LOW);
+  endtask
+  
+endclass
+
+
+class driver_callback extends uvm_callback;
+  
+  `uvm_object_utils(driver_callback)
+  
+  function new(string name = "driver_callback");
+    super.new(name);
+  endfunction
+  
+  virtual task pre_drive; endtask
+  virtual task post_drive; endtask
+endclass
+
+
+
+class user_callback extends driver_callback;
+  
+  `uvm_object_utils(user_callback)
+  
+  function new(string name = "user_callback");
+    super.new(name);
+  endfunction
+  
+  task pre_drive;
+    `uvm_info("USER_CALLBACK","Inside pre_drive method",UVM_LOW);
+  endtask
+  
+  task post_drive;
+    `uvm_info("USER_CALLBACK","Inside post_drive method",UVM_LOW);
+  endtask
+endclass
+
+
+class basic_test extends uvm_test;
+  environment env;
+  
+  `uvm_component_utils(basic_test)
+  
+  function new(string name = "basic_test", uvm_component parent=null);
+    super.new(name,parent);
+  endfunction
+  
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    env = environment::type_id::create("env", this);
+  endfunction
+endclass
+
+
+class user_callback_test extends basic_test;
+  user_callback callback_1;
+  
+  `uvm_component_utils(user_callback_test)
+  
+  function new(string name = "user_callback_test", uvm_component parent=null);
+    super.new(name,parent);
+  endfunction
+  
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    callback_1 = user_callback::type_id::create("callback_1", this);
+    
+    uvm_callbacks#(driver,driver_callback)::add(env.driv,callback_1);
+  endfunction
+endclass
+
+
+
+class environment extends uvm_env;
+  driver driv;
+  
+  `uvm_component_utils(environment)
+  
+  function new(string name, uvm_component parent);
+    super.new(name,parent);
+  endfunction
+  
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    driv = driver::type_id::create("driv", this);
+  endfunction
+  
+endclass
+
+
+`include "uvm_macros.svh"
+import uvm_pkg::*;
+
+`include "driver_callback.sv"
+`include "driver.sv"
+`include "environment.sv"
+`include "basic_test.sv"
+
+`include "user_callback.sv"
+`include "user_callback_test.sv"
+
+program testbench_top;
+  
+ 
+  initial begin
+    run_test();
+  end 
+
+endprogram
