@@ -1,0 +1,310 @@
+INTERFACE______________________________
+
+interface design_if;
+
+bit clk,rst;
+logic [3:0] din;
+logic [3:0] qout;
+
+modport dff(input clk,rst,din,output qout);
+
+endinterface
+
+
+DESING________________
+module dff(design_if if1);
+
+always @(posedge if1.clk)
+begin
+	if(if1.rst)
+		if1.qout = 4'b0;
+	else
+	if1.qout = if1.din;
+end
+endmodule
+
+
+SEQ_ITEM_______________________________
+
+class seq_item extends uvm_sequence_item;
+
+
+randc logic[3:0]din;
+logic [3:0] qout;
+bit rst,clk;
+
+`uvm_object_utils_begin(seq_item)
+`uvm_field_int(din,UVM_ALL_ON)
+`uvm_field_int(qout,UVM_ALL_ON)
+
+`uvm_object_utils_end
+
+function new(string name = "seq_item");
+super.new(name);
+endfunction
+
+
+
+endclass
+
+
+
+
+
+SEQNCER________________________________
+
+class my_sequence extends uvm_sequence#(seq_item);
+`uvm_object_utils(my_sequence)
+
+seq_item seq;
+
+function new(string name ="my_sequence");
+super.new(name);
+endfunction
+
+task body;
+repeat(4)
+begin
+
+`uvm_do(seq);
+/*seq = seq_item::type_id::create("seq");
+start_item(seq);
+if(!seq.randomize())
+	`uvm_error("","sequence item not recognized")
+finish_item(seq);*/
+
+end
+endtask
+
+endclass
+
+
+driver_____________________________________
+
+class my_driver extends uvm_driver#(seq_item);
+`uvm_component_utils(my_driver)
+seq_item seq;
+virtual design_if vif;
+function new(string name , uvm_component parent);
+super.new(name,parent);
+endfunction
+
+
+function void build_phase (uvm_phase phase);
+super.build_phase(phase);
+
+if(!uvm_config_db#(virtual design_if)::get(this,"","vif",vif))
+`uvm_fatal(" ","virtal interface is not setted in top module")
+
+endfunction
+
+
+virtual task run_phase(uvm_phase phase);
+super.run_phase(phase);
+vif.rst<=1;
+	#6;
+	vif.rst<=0;
+
+forever begin
+	@(negedge vif.clk)
+	
+	seq_item_port.get_next_item(seq);
+	
+	vif.din <= seq.din;
+	//seq.print();
+	
+	`uvm_info("driver to interface",$sformatf("din=%0d,qout=%0d,rst=%0d",seq.din,seq.qout,vif.rst),UVM_NONE)
+	seq_item_port.item_done(seq);
+	//repeat(2)@(posedge vif.clk)
+end
+endtask
+endclass
+
+
+
+
+MONITOR_____________________________________________
+
+class monitor extends uvm_monitor;
+`uvm_component_utils(monitor)
+
+seq_item item;
+virtual design_if vif;
+
+uvm_analysis_port#(seq_item) mon_analysis;
+
+function new (string name , uvm_component parent);
+super.new(name, parent);
+endfunction
+
+
+function void build_phase(uvm_phase phase);
+super.build_phase(phase);
+mon_analysis = new("mon_analysis",this);
+
+if(!uvm_config_db #(virtual design_if)::get(this,"","vif",vif))
+`uvm_fatal("","set the vif in top module")
+
+endfunction
+
+ task run_phase(uvm_phase phase);
+//super.run_phase(phase);
+`uvm_info("",$sformatf("din=%0d",vif.din),UVM_NONE)
+item =seq_item::type_id::create("item");
+	
+	forever begin
+	@(posedge vif.clk)
+	item.din <= vif.din;
+	item.qout <= vif.qout;
+	//item.rst <= vif.rst;
+	//item.print();
+	`uvm_info("monitor",$sformatf("din=%0d,qout=%0d,rst=%0d",vif.din,vif.qout,vif.rst),UVM_NONE)
+	mon_analysis.write(item);
+	end
+	`uvm_info("","---------------------------------------------------",UVM_NONE)
+	
+endtask
+endclass
+
+
+PACKAGE_______________________________________
+
+package my_package;
+
+	`include "uvm_macros.svh"
+	import uvm_pkg::*;
+	`include "seq_item.svh"
+	`include "sequence.svh"
+	`include "driver.svh"
+	`include "monitor.svh"
+	`include "agent.svh"
+	`include "sb.svh"
+	`include "environment.svh"
+	`include "test.svh"
+endpackage
+
+
+AGENT_______________________________________
+
+
+class agent extends uvm_agent;
+`uvm_component_utils(agent)
+
+//seq_item seq;
+my_driver driv;
+monitor mon;
+uvm_sequencer #(seq_item) sequencer;
+
+function new (string name , uvm_component parent);
+super.new(name,parent);
+endfunction
+
+function void build_phase(uvm_phase phase);
+super.build_phase(phase);
+mon = monitor ::type_id::create("mon",this);
+driv = my_driver ::type_id::create("driv",this);
+sequencer = uvm_sequencer#(seq_item)::type_id::create("sequencer",this);
+
+endfunction
+
+function void connect_phase(uvm_phase phase);
+super.connect_phase(phase);
+driv.seq_item_port.connect(sequencer.seq_item_export);
+endfunction
+
+task run_phase(uvm_phase phase);
+phase.raise_objection(this);
+begin
+		my_sequence seq;
+	   seq = my_sequence::type_id::create("seq");
+	   seq.start(sequencer);
+end
+phase.drop_objection(this);
+endtask
+endclass
+
+
+
+ENV________________________________________
+
+class test extends uvm_test;
+`uvm_component_utils(test)
+
+environment env;
+
+function new (string name,uvm_component parent);
+super.new(name,parent);
+endfunction
+
+function void build_phase(uvm_phase phase);
+super.build_phase(phase);
+env = environment ::type_id::create("env",this);
+endfunction
+
+
+task run_phase (uvm_phase phase);
+super.run_phase(phase);
+phase.raise_objection(this);
+begin
+#90;
+`uvm_warning("","HI TEST")
+phase.drop_objection(this);
+end
+endtask
+endclass
+
+
+TEST___________________________
+class test extends uvm_test;
+`uvm_component_utils(test)
+
+environment env;
+
+function new (string name,uvm_component parent);
+super.new(name,parent);
+endfunction
+
+function void build_phase(uvm_phase phase);
+super.build_phase(phase);
+env = environment ::type_id::create("env",this);
+endfunction
+
+
+task run_phase (uvm_phase phase);
+super.run_phase(phase);
+phase.raise_objection(this);
+begin
+#90;
+`uvm_warning("","HI TEST")
+phase.drop_objection(this);
+end
+endtask
+endclass
+
+
+TOP____________________________
+`include "package.svh"
+`include "design.sv"
+`include "interface.sv"
+
+
+module top();
+	
+	import uvm_pkg::*;
+	import my_package::*;
+	
+	design_if if1();
+	dff dut(if1);
+	
+	initial begin 
+	if1.clk = 0;
+	forever #5 if1.clk = ~if1.clk;
+	end
+	
+	initial begin
+	uvm_config_db#(virtual design_if)::set(null,"*","vif",if1);
+	run_test("test");
+	#100 $finish;
+	end
+
+endmodule
